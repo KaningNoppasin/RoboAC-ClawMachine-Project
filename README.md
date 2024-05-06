@@ -14,7 +14,10 @@ X-Axis 865 mm
 Y-Axis 750 mm
 ```
 
-> ## Set-up
+> ## Set-up-Select-Compile-File
 ```bash
-
 src/main.c
+
+#include <Arduino.h>
+#include "./main/compleatCode.ino"
+```
