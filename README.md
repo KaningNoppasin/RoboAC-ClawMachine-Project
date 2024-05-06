@@ -8,8 +8,10 @@
 ![image](https://github.com/KaningNoppasin/labubu_dollProject/assets/95127494/acd96ec4-96f8-4583-b83b-ae31e48f2a74)
 
 ```bash
-@@ -14,7 +14,7 @@ Y-Axis 750 mm
+Wokespace
 
+X-Axis 865 mm
+Y-Axis 750 mm
 ```
 
 > ## Set-up
