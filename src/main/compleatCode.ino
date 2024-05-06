@@ -1,5 +1,6 @@
 // #include <Arduino.h>
 #include <AccelStepper.h>
+#include <ArduinoJson.h>
 #include "./init_IO.h"
 #include "StepperController.h"
 
@@ -24,6 +25,15 @@ StepperController stepperZ(Mode, PUL_Z, DIR_Z);
 
 double defaultSpeed = 500;
 String data;
+
+JsonDocument getPayload;
+JsonDocument putPayload;
+
+int positionX;
+int positionY;
+
+unsigned long previousMillis;
+bool receivedData = false;
 
 float getTimeFormPosition(float position){
     return position / (139.2 / 500) / 500;
@@ -95,12 +105,17 @@ void plotXYZ(){
 
     positionX = positionX > stepperX1.getLimitNegativePosition() ? stepperX1.getLimitNegativePosition() : positionX;
     positionY = positionY > stepperY.getLimitPositivePosition() ? stepperY.getLimitPositivePosition() : positionY;
-    positionZ = positionZ > stepperZ.getLimitNegativePosition() ? stepperZ.getLimitNegativePosition() : positionZ;
+    positionZ = positionZ > stepperZ.getLimitPositivePosition() ? stepperZ.getLimitPositivePosition() : positionZ;
+
+    // Up
+    stepperZ.moveTo(stepperZ.getLimitPositivePosition());
+    while (stepperZ.run());
 
     stepperX1.moveTo(-positionX);
     stepperX2.moveTo(positionX);
     stepperY.moveTo(positionY);
-    stepperZ.moveTo(-positionZ);
+    // Down
+    stepperZ.moveTo(positionZ);
 
     // while (stepperX1.run() || stepperX2.run() || stepperY.run());
     while (
@@ -121,6 +136,39 @@ void plotXYZ(){
     while (stepperZ.run());
 
 }
+
+void plotXYZ_withOutSerial(int positionX, int positionY, int positionZ){
+    positionX *= 100 / 30;
+    positionY *= 100 / 30;
+    positionZ *= 100 / 30;
+
+    positionX = positionX > stepperX1.getLimitNegativePosition() ? stepperX1.getLimitNegativePosition() : positionX;
+    positionY = positionY > stepperY.getLimitPositivePosition() ? stepperY.getLimitPositivePosition() : positionY;
+    positionZ = positionZ > stepperZ.getLimitPositivePosition() ? stepperZ.getLimitPositivePosition() : positionZ;
+
+    // UP
+    stepperZ.moveTo(stepperZ.getLimitPositivePosition());
+    while (stepperZ.run());
+
+    stepperX1.moveTo(-positionX);
+    stepperX2.moveTo(positionX);
+    stepperY.moveTo(positionY);
+    // Down
+    stepperZ.moveTo(positionZ);
+
+    while (
+        stepperX1.currentPosition() != -positionX ||
+        stepperX2.currentPosition() != positionX ||
+        stepperY.currentPosition() != positionY
+    ){
+        stepperX1.run();
+        stepperX2.run();
+        stepperY.run();
+    }
+    while (stepperZ.run());
+
+}
+
 
 void moveWithTime(){
     // float time = getTimeFormPosition(position);
@@ -184,18 +232,20 @@ void getInputValue()
 void setup()
 {
 	Serial.begin(115200);
+    Serial1.begin(115200);
+    Serial.println("Hello from received");
 
 	for (int i = 0; i < 6; i++) pinMode(pinIN[i], INPUT_PULLUP);
     stepperX1.setLimitPositivePosition(0);stepperX1.setLimitNegativePosition(2900);
     stepperX2.setLimitPositivePosition(2900);stepperX2.setLimitNegativePosition(0);
-    stepperY.setLimitPositivePosition(2500);stepperY.setLimitNegativePosition(300);
-    stepperZ.setLimitPositivePosition(300);stepperZ.setLimitNegativePosition(1900);
+    stepperY.setLimitPositivePosition(2500);stepperY.setLimitNegativePosition(0);
+    stepperZ.setLimitPositivePosition(1900);stepperZ.setLimitNegativePosition(0);
 
 }
 
 void loop()
 {
-    getCurrentPosition();
+    // getCurrentPosition();
     // getInputValue();
     if (Serial.available() > 0){
         String data = Serial.readStringUntil('\n');
@@ -211,6 +261,26 @@ void loop()
                 }
             }
         }
+    }
+    if (Serial1.available() > 0){
+        deserializeJson(getPayload, Serial1);
+        previousMillis = millis();
+        receivedData = true;
+    }
+    if (millis() - previousMillis > 100 && receivedData){
+        positionX = getPayload["x"];
+        positionY = getPayload["y"];
+        previousMillis = millis();
+        receivedData = false;
+        Serial.print("positionX :");Serial.println(positionX);
+        Serial.print("positionY :");Serial.println(positionY);
+        putPayload["status"] = "processing";
+        serializeJson(putPayload, Serial1);
+        plotXYZ_withOutSerial(positionX, positionY, 0);
+        Serial.print("do something :");
+        // delay(5000);
+        putPayload["status"] = "done";
+        serializeJson(putPayload, Serial1);
     }
     delay(2);
     JoyController();
