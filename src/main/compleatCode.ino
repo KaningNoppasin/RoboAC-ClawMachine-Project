@@ -22,12 +22,13 @@ StepperController stepperZ(Mode, PUL_Z, DIR_Z);
 
 // defaultSpeed = 1000 4step y,z Axis Ok with delay 1 ms
 
+int limitPosition = 0;
 
 double defaultSpeed = 500;
 String data;
 
-JsonDocument getPayload;
-JsonDocument putPayload;
+// JsonDocument getPayload;
+// JsonDocument putPayload;
 
 int positionX;
 int positionY;
@@ -236,12 +237,55 @@ void setup()
     Serial.println("Hello from received");
 
 	for (int i = 0; i < 6; i++) pinMode(pinIN[i], INPUT_PULLUP);
-    stepperX1.setLimitPositivePosition(0);stepperX1.setLimitNegativePosition(2900);
-    stepperX2.setLimitPositivePosition(2900);stepperX2.setLimitNegativePosition(0);
-    stepperY.setLimitPositivePosition(2500);stepperY.setLimitNegativePosition(0);
-    stepperZ.setLimitPositivePosition(1900);stepperZ.setLimitNegativePosition(0);
+    // x 2900
+    // x 810 mm
+    // y 720 mm
+    stepperX1.setLimitPositivePosition(limitPosition);stepperX1.setLimitNegativePosition(2700);
+    stepperX2.setLimitPositivePosition(2700);stepperX2.setLimitNegativePosition(limitPosition);
+    stepperY.setLimitPositivePosition(2400);stepperY.setLimitNegativePosition(limitPosition);
+    stepperZ.setLimitPositivePosition(1900);stepperZ.setLimitNegativePosition(limitPosition);
+    // stepperZ.setLimitPositivePosition(2000);stepperZ.setLimitNegativePosition(2000);
 
 }
+
+void Sender_serializeJson(String status)
+{
+    StaticJsonDocument<200> payload;
+    payload["status"] = status;
+
+    serializeJson(payload, Serial1);
+}
+
+void Receiver_deserializeJson(){
+    if (Serial1.available())
+    {
+        StaticJsonDocument<300> response;
+
+        DeserializationError err = deserializeJson(response, Serial1);
+
+        if (err == DeserializationError::Ok)
+        {
+            Serial.print("x = ");
+            Serial.println(response["x"].as<int>());
+            Serial.print("y = ");
+            Serial.println(response["y"].as<int>());
+            Sender_serializeJson("processing");
+            plotXYZ_withOutSerial(response["x"].as<int>(), response["y"].as<int>(), 0);
+            Sender_serializeJson("done");
+        }
+        else
+        {
+            // Print error to the "debug" serial port
+            Serial.print("deserializeJson() returned ");
+            Serial.println(err.c_str());
+
+            // Flush all bytes in the "link" serial port buffer
+            while (Serial1.available() > 0)
+                Serial1.read();
+        }
+    }
+}
+
 
 void loop()
 {
@@ -262,26 +306,29 @@ void loop()
             }
         }
     }
-    if (Serial1.available() > 0){
-        deserializeJson(getPayload, Serial1);
-        previousMillis = millis();
-        receivedData = true;
-    }
-    if (millis() - previousMillis > 100 && receivedData){
-        positionX = getPayload["x"];
-        positionY = getPayload["y"];
-        previousMillis = millis();
-        receivedData = false;
-        Serial.print("positionX :");Serial.println(positionX);
-        Serial.print("positionY :");Serial.println(positionY);
-        putPayload["status"] = "processing";
-        serializeJson(putPayload, Serial1);
-        plotXYZ_withOutSerial(positionX, positionY, 0);
-        Serial.print("do something :");
-        // delay(5000);
-        putPayload["status"] = "done";
-        serializeJson(putPayload, Serial1);
-    }
+    // if (Serial1.available() > 0){
+    //     deserializeJson(getPayload, Serial1);
+    //     previousMillis = millis();
+    //     receivedData = true;
+    // }
+    // if (millis() - previousMillis > 100 && receivedData){
+    //     positionX = getPayload["x"];
+    //     positionY = getPayload["y"];
+    //     previousMillis = millis();
+    //     receivedData = false;
+    //     Serial.print("positionX :");Serial.println(positionX);
+    //     Serial.print("positionY :");Serial.println(positionY);
+    //     putPayload["status"] = "processing";
+    //     serializeJson(putPayload, Serial1);
+    //     plotXYZ_withOutSerial(positionX, positionY, 0);
+    //     Serial.print("do something :");
+    //     // delay(5000);
+    //     putPayload["status"] = "done";
+    //     serializeJson(putPayload, Serial1);
+    // }
+
+    // Receiver_deserializeJson();
+
     delay(2);
     JoyController();
     runSpeedAllStepper();

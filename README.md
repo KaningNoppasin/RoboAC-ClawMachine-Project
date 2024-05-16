@@ -10,8 +10,8 @@
 ```bash
 Workspace
 
-X-Axis 865 mm
-Y-Axis 750 mm
+X-Axis 810 mm
+Y-Axis 720 mm
 ```
 
 > ## Set-up-Select-Compile-File
