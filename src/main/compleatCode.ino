@@ -27,6 +27,9 @@ int limitPosition = 0;
 double defaultSpeed = 500;
 String data;
 
+JsonDocument getPayload;
+JsonDocument putPayload;
+
 // JsonDocument getPayload;
 // JsonDocument putPayload;
 
@@ -306,11 +309,40 @@ void loop()
             }
         }
     }
-    // if (Serial1.available() > 0){
-    //     deserializeJson(getPayload, Serial1);
-    //     previousMillis = millis();
-    //     receivedData = true;
-    // }
+    if (Serial1.available() > 0){
+        // Serial.println(Serial1.read());
+        // deserializeJson(getPayload, Serial1);
+        // previousMillis = millis();
+        // receivedData = true;
+        StaticJsonDocument<300> doc;
+
+        DeserializationError err = deserializeJson(doc, Serial1);
+
+        if (err == DeserializationError::Ok)
+        {
+            // Serial.print("x = ");
+            // Serial.println(doc["x"].as<String>());
+            // Serial.print("y = ");
+            // Serial.println(doc["y"].as<String>());
+            Serial.print("x = ");
+            Serial.println(doc["x"].as<int>());
+            Serial.print("y = ");
+            Serial.println(doc["y"].as<int>());
+            plotXYZ_withOutSerial(doc["x"].as<int>(), doc["y"].as<int>(), 0);
+            putPayload["status"] = "DONE";
+            serializeJson(putPayload, Serial1);
+        }
+        else
+        {
+            // Print error to the "debug" serial port
+            Serial.print("deserializeJson() returned ");
+            Serial.println(err.c_str());
+
+            // Flush all bytes in the "link" serial port buffer
+            while (Serial1.available() > 0)
+                Serial1.read();
+        }
+    }
     // if (millis() - previousMillis > 100 && receivedData){
     //     positionX = getPayload["x"];
     //     positionY = getPayload["y"];
@@ -323,7 +355,7 @@ void loop()
     //     plotXYZ_withOutSerial(positionX, positionY, 0);
     //     Serial.print("do something :");
     //     // delay(5000);
-    //     putPayload["status"] = "done";
+    //     putPayload["status"] = "DONE";
     //     serializeJson(putPayload, Serial1);
     // }
 
