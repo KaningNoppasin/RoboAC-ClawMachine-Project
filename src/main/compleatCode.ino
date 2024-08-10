@@ -19,6 +19,9 @@ StepperController stepperX1(Mode, PUL_X1, DIR_X1);
 StepperController stepperX2(Mode, PUL_X2, DIR_X2);
 StepperController stepperY(Mode, PUL_Y, DIR_Y);
 StepperController stepperZ(Mode, PUL_Z, DIR_Z);
+// TODO: Chage Y <=> Z
+// StepperController stepperY(Mode, PUL_Z, DIR_Z);
+// StepperController stepperZ(Mode, PUL_Y, DIR_Y);
 
 // defaultSpeed = 1000 4step y,z Axis Ok with delay 1 ms
 
@@ -39,16 +42,10 @@ int positionY;
 unsigned long previousMillis;
 bool receivedData = false;
 
-float getTimeFormPosition(float position){
-    return position / (139.2 / 500) / 500;
-}
-
-void setSpeedAllStepper(double speedX1, double speedX2, double speedY, double speedZ){
-        stepperX1.setSpeedAndLimitPositionOutOfRange(speedX1);
-        stepperX2.setSpeedAndLimitPositionOutOfRange(speedX2);
-        stepperY.setSpeedAndLimitPositionOutOfRange(speedY);
-        stepperZ.setSpeedAndLimitPositionOutOfRange(speedZ);
-}
+/* ---------- SLECTOR SWITCH ---------- */
+byte selectorSwitchA_Value = 0;
+byte selectorSwitchB_Value = 0;
+byte selectorSwitchC_Value = 0;
 
 void runSpeedAllStepper(){
 	stepperX1.runSpeed();
@@ -57,28 +54,28 @@ void runSpeedAllStepper(){
 	stepperZ.runSpeed();
 }
 
+
 void setHome(){
-    if (stepperX1.currentPosition() > 0) stepperX1.setSpeed(-defaultSpeed);
-    else if (stepperX1.currentPosition() < 0) stepperX1.setSpeed(defaultSpeed);
-
-    if (stepperX2.currentPosition() > 0) stepperX2.setSpeed(-defaultSpeed);
-    else if (stepperX2.currentPosition() < 0) stepperX2.setSpeed(defaultSpeed);
-
-    if (stepperY.currentPosition() > 0) stepperY.setSpeed(-defaultSpeed);
-    else if (stepperY.currentPosition() < 0) stepperY.setSpeed(defaultSpeed);
-
-    if (stepperZ.currentPosition() > 0) stepperZ.setSpeed(-defaultSpeed);
-    else if (stepperZ.currentPosition() < 0) stepperZ.setSpeed(defaultSpeed);
-
-    while (stepperX1.currentPosition() != 0 || stepperX2.currentPosition() != 0 || stepperY.currentPosition() != 0 || stepperZ.currentPosition() != 0){
-        if (stepperX1.currentPosition() == 0) stepperX1.setSpeed(0);
-        if (stepperX2.currentPosition() == 0) stepperX2.setSpeed(0);
-        if (stepperY.currentPosition() == 0) stepperY.setSpeed(0);
-        if (stepperZ.currentPosition() == 0) stepperZ.setSpeed(0);
+    while (
+        digitalRead(Limit_XAxis) ||
+        digitalRead(Limit_YAxis) ||
+        digitalRead(Limit_ZAxis)
+    ){
         delay(1);
+        // BACKWARD
+        stepperX1.setSpeed(digitalRead(Limit_XAxis) ? -defaultSpeed : 0);
+        stepperX2.setSpeed(digitalRead(Limit_XAxis) ? defaultSpeed : 0);
+        // RIGHT
+        stepperY.setSpeed(digitalRead(Limit_YAxis) ? defaultSpeed : 0);
+        // DOWN
+        stepperZ.setSpeed(digitalRead(Limit_ZAxis) ? defaultSpeed : 0);
+
         runSpeedAllStepper();
     }
-    setSpeedAllStepper(0, 0, 0, 0);
+    stepperX1.setCurrentPosition(0);
+    stepperX2.setCurrentPosition(0);
+    stepperY.setCurrentPosition(0);
+    stepperZ.setCurrentPosition(0);
 }
 
 void getCurrentPosition(){
@@ -141,6 +138,49 @@ void plotXYZ(){
 
 }
 
+void plotXYZ_2(){
+    String data = Serial.readStringUntil('_');
+    // int positionX = data.toFloat() / (139.2 / 494);
+    int positionX = data.toFloat() * 100 / 30;
+
+    data = Serial.readStringUntil('_');
+    // int positionY = data.toFloat() / (139.2 / 494);
+    int positionY = data.toFloat() * 100 / 30;
+
+    data = Serial.readStringUntil('_');
+    // int positionZ = data.toFloat() / (139.2 / 494);
+    int positionZ = data.toFloat() * 100 / 30;
+
+    // position 100 = 3cm
+
+    positionX = positionX > stepperX1.getLimitPositivePosition() ? stepperX1.getLimitPositivePosition() : positionX;
+    positionY = positionY > stepperY.getLimitNegativePosition() ? stepperY.getLimitNegativePosition() : positionY;
+    positionZ = positionZ > stepperZ.getLimitNegativePosition() ? stepperZ.getLimitNegativePosition() : positionZ;
+
+    // Up
+    stepperZ.moveTo(-stepperZ.getLimitNegativePosition());
+    while (stepperZ.run())delay(1);
+
+    stepperX1.moveTo(positionX);
+    stepperX2.moveTo(-positionX);
+    stepperY.moveTo(-positionY);
+    // Down
+    stepperZ.moveTo(-positionZ);
+
+    while (
+        stepperX1.currentPosition() != -positionX ||
+        stepperX2.currentPosition() != positionX ||
+        stepperY.currentPosition() != positionY
+    ){
+        stepperX1.run();
+        stepperX2.run();
+        stepperY.run();
+        delay(1);
+    }
+    while (stepperZ.run())delay(1);
+
+}
+
 void plotXYZ_withOutSerial(int positionX, int positionY, int positionZ){
     positionX *= 100 / 30;
     positionY *= 100 / 30;
@@ -173,7 +213,6 @@ void plotXYZ_withOutSerial(int positionX, int positionY, int positionZ){
 
 }
 
-
 void moveWithTime(){
     // float time = getTimeFormPosition(position);
     float time = data.toInt();
@@ -194,19 +233,43 @@ void moveWithTime(){
     }
 }
 
+void gripperKeep(){
+    // DOWN
+    stepperZ.moveTo(-1000);
+    while(stepperZ.run())delay(1);
+    // Serial.println("goToTargetPosition -1000");
+    // stepperZ.goToTargetPosition(-1000);
+
+    // KEEP
+    digitalWrite(Relay_Keep, HIGH);
+    delay(1000);
+
+    // UP to Show
+    stepperZ.moveTo(-1900);
+    while(stepperZ.run())delay(1);
+    // Serial.println("goToTargetPosition -1900");
+    // stepperZ.goToTargetPosition(-1900);
+    delay(1000);
+
+    // Release
+    digitalWrite(Relay_Keep, LOW);
+}
+
 void JoyController(){
-    if (!digitalRead(JoyC_XAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
-	else if (!digitalRead(JoyD_XAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
+    // Y
+    if (!digitalRead(JoyA_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
+	else if (!digitalRead(JoyB_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
 	else stepperY.setSpeedAndLimitPositionOutOfRange(0);
 
-	if (!digitalRead(JoyA_YAxis))
-	{
-        stepperX1.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
-        stepperX2.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
-	}
-	else if (!digitalRead(JoyB_YAxis))
+    // X
+	if (!digitalRead(JoyC_XAxis))
 	{
         stepperX1.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+        stepperX2.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+	}
+	else if (!digitalRead(JoyD_XAxis))
+	{
+        stepperX1.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
         stepperX2.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
 	}
     else
@@ -215,22 +278,21 @@ void JoyController(){
         stepperX2.setSpeedAndLimitPositionOutOfRange(0);
 	}
 
-	if (!digitalRead(KeepA_ZAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
-	else if (!digitalRead(KeepB_ZAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
-	else stepperZ.setSpeedAndLimitPositionOutOfRange(0);
+    // Keep
+    if (!digitalRead(Joy_Keep)) gripperKeep();
+
 
 }
 
 void getInputValue()
 {
-	// Serial.print("StartButton:" + String(digitalRead(StartButton)));
-	// Serial.print("\tKeep:" + String(digitalRead(Keep)));
-	Serial.print("KeepA_ZAxis:" + String(digitalRead(KeepA_ZAxis)));
-	Serial.print("\tKeepB_ZAxis:" + String(digitalRead(KeepB_ZAxis)));
-	Serial.print("\tJoyA_YAxis:" + String(digitalRead(JoyA_YAxis)));
-	Serial.print("\tJoyB_YAxis:" + String(digitalRead(JoyB_YAxis)));
-	Serial.print("\tJoyC_XAxis:" + String(digitalRead(JoyC_XAxis)));
-	Serial.println("\tJoyD_XAxis:" + String(digitalRead(JoyD_XAxis)));
+    for (int i = 0; i < sizeof(pinIN) / sizeof(int) ; i++){
+        Serial.print(" >>");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.print(digitalRead(pinIN[i]));
+    }
+    Serial.println();
 }
 
 void setup()
@@ -239,16 +301,51 @@ void setup()
     Serial1.begin(115200);
     Serial.println("Hello from received");
 
-	for (int i = 0; i < 6; i++) pinMode(pinIN[i], INPUT_PULLUP);
+	for (int i = 0; i < sizeof(pinIN) / sizeof(int); i++) pinMode(pinIN[i], INPUT_PULLUP);
+    pinMode(Relay_Keep, OUTPUT);
     // x 2900
     // x 810 mm
     // y 720 mm
-    stepperX1.setLimitPositivePosition(limitPosition);stepperX1.setLimitNegativePosition(2700);
-    stepperX2.setLimitPositivePosition(2700);stepperX2.setLimitNegativePosition(limitPosition);
-    stepperY.setLimitPositivePosition(2400);stepperY.setLimitNegativePosition(limitPosition);
-    stepperZ.setLimitPositivePosition(1900);stepperZ.setLimitNegativePosition(limitPosition);
-    // stepperZ.setLimitPositivePosition(2000);stepperZ.setLimitNegativePosition(2000);
+    stepperX1.setLimitPositivePosition(2700);stepperX1.setLimitNegativePosition(limitPosition);
+    stepperX2.setLimitPositivePosition(limitPosition);stepperX2.setLimitNegativePosition(2700);
+    stepperY.setLimitPositivePosition(limitPosition);stepperY.setLimitNegativePosition(2400);
+    stepperZ.setLimitPositivePosition(limitPosition);stepperZ.setLimitNegativePosition(1900);
 
+    stepperX1.setAcceleration(3000);
+    stepperX2.setAcceleration(3000);
+    stepperY.setAcceleration(3000);
+    stepperZ.setAcceleration(3000);
+
+    stepperX1.setMaxSpeed(5000);
+    stepperX2.setMaxSpeed(5000);
+    stepperY.setMaxSpeed(5000);
+    stepperZ.setMaxSpeed(5000);
+
+    setHome();
+    delay(500);
+    stepperZ.moveTo(-1900);
+    while(stepperZ.run())delay(1);
+}
+
+void readSelectorSwitch(){
+    // A
+    if (!digitalRead(SLECTOR_SWITCH_A1)) selectorSwitchA_Value = 1;
+    else if (!digitalRead(SLECTOR_SWITCH_A2)) selectorSwitchA_Value = 2;
+    else if (!digitalRead(SLECTOR_SWITCH_A3)) selectorSwitchA_Value = 3;
+    else selectorSwitchA_Value = 0;
+    // B
+    if (!digitalRead(SLECTOR_SWITCH_B1)) selectorSwitchB_Value = 1;
+    else if (!digitalRead(SLECTOR_SWITCH_B2)) selectorSwitchB_Value = 2;
+    else if (!digitalRead(SLECTOR_SWITCH_B3)) selectorSwitchB_Value = 3;
+    else selectorSwitchB_Value = 0;
+    // C
+    if (!digitalRead(SLECTOR_SWITCH_C1)) selectorSwitchC_Value = 1;
+    else if (!digitalRead(SLECTOR_SWITCH_C2)) selectorSwitchC_Value = 2;
+    else if (!digitalRead(SLECTOR_SWITCH_C3)) selectorSwitchC_Value = 3;
+    else selectorSwitchC_Value = 0;
+    // Serial.print(selectorSwitchA_Value);
+    // Serial.print(selectorSwitchB_Value);
+    // Serial.println(selectorSwitchC_Value);
 }
 
 void Sender_serializeJson(String status)
@@ -289,9 +386,17 @@ void Receiver_deserializeJson(){
     }
 }
 
-
 void loop()
 {
+/*
+* Max Position
+X1 2700 | X2 -2700
+Y -2475
+Z ok -1000 max(use)-2000
+
+*/
+    // digitalWrite(Relay_Keep,LOW);
+    // readSelectorSwitch();
     // getCurrentPosition();
     // getInputValue();
     if (Serial.available() > 0){
@@ -303,7 +408,8 @@ void loop()
         else{
             while (true){
                 if (Serial.available() > 0){
-                    plotXYZ();
+                    // plotXYZ();
+                    plotXYZ_2();
                     break;
                 }
             }
@@ -343,23 +449,6 @@ void loop()
                 Serial1.read();
         }
     }
-    // if (millis() - previousMillis > 100 && receivedData){
-    //     positionX = getPayload["x"];
-    //     positionY = getPayload["y"];
-    //     previousMillis = millis();
-    //     receivedData = false;
-    //     Serial.print("positionX :");Serial.println(positionX);
-    //     Serial.print("positionY :");Serial.println(positionY);
-    //     putPayload["status"] = "processing";
-    //     serializeJson(putPayload, Serial1);
-    //     plotXYZ_withOutSerial(positionX, positionY, 0);
-    //     Serial.print("do something :");
-    //     // delay(5000);
-    //     putPayload["status"] = "DONE";
-    //     serializeJson(putPayload, Serial1);
-    // }
-
-    // Receiver_deserializeJson();
 
     delay(2);
     JoyController();

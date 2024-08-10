@@ -16,6 +16,8 @@ class StepperController: public AccelStepper{
         void setDefaultSpeed(float defaultSpeed);
         unsigned int getDefaultSpeed();
         void setHome();
+        void setSpeedWithPositionCondition(int targetPosition);
+        void goToTargetPosition(int targetPosition);
     private:
         int _limitPositivePosition;
         int _limitNegativePosition;

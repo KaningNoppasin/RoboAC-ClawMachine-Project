@@ -55,3 +55,25 @@ void StepperController::setHome(){
 
     this->setSpeed(0);
 }
+
+void StepperController::setSpeedWithPositionCondition(int targetPosition){
+    // this->_defaultSpeed = map(abs(this->currentPosition() - targetPosition), 0, 50000, 500, 5000);
+    if (this->currentPosition() > targetPosition){
+        this->setSpeed(-this->_defaultSpeed);
+    }
+    else if(this->currentPosition() < targetPosition){
+        this->setSpeed(this->_defaultSpeed);
+    }
+    else{
+        this->setSpeed(0);
+    }
+}
+
+void StepperController::goToTargetPosition(int targetPosition){
+    this->setSpeedWithPositionCondition(targetPosition);
+    while(this->currentPosition() != targetPosition){
+        delay(1);
+        this->runSpeed();
+    }
+    this->setSpeed(0);
+}

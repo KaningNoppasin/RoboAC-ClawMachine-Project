@@ -1,3 +1,7 @@
+#ifndef IOFILE
+#define IOFILE
+
+/* ---------- STEPPER MOTOR ---------- */
 /*
 
 *    -------
@@ -6,46 +10,69 @@
 *    X1---X2
 
 */
-#ifndef IOFILE
-#define IOFILE
+#define DIR_X1 51
+#define PUL_X1 50
 
-// #define ENA_X1 10
-#define DIR_X1 9
-#define PUL_X1 8
+#define DIR_X2 49
+#define PUL_X2 48
 
-// #define ENA_X2 13
-#define DIR_X2 12
-#define PUL_X2 11
+#define DIR_Y 47
+#define PUL_Y 46
 
-// #define ENA_Y 7
-#define DIR_Y 6
-#define PUL_Y 5
+#define DIR_Z 53
+#define PUL_Z 52
 
-// #define ENA_Z 4
-#define DIR_Z 3
-#define PUL_Z 2
+/* ---------- LIMIT SWITCH ---------- */
+#define Limit_XAxis A0
+#define Limit_YAxis A1
+#define Limit_ZAxis A2
 
-// TODO: Change Pin !
-// #define StartButton 49
-// #define Keep 50
-#define KeepA_ZAxis 49
-#define KeepB_ZAxis 50
+/* ---------- JOY ---------- */
 
-#define JoyA_YAxis 52
-#define JoyB_YAxis 53
-#define JoyC_XAxis 48
-#define JoyD_XAxis 51
+#define JoyA_YAxis 5   // LEFT -
+#define JoyB_YAxis 4   // RIGHT +
+#define JoyC_XAxis 6   // FORWARD
+#define JoyD_XAxis 7   // BACKWARD
 
+#define Joy_Keep 13   // KEEP
 
-// int pinIN[6] = {
-//                 StartButton,Keep,
-//                 JoyA_YAxis,JoyB_YAxis,
-//                 JoyC_XAxis,JoyD_XAxis,
-//                 };
-int pinIN[6] = {
-                KeepA_ZAxis,KeepB_ZAxis,
-                JoyA_YAxis,JoyB_YAxis,
-                JoyC_XAxis,JoyD_XAxis,
+/* ---------- RELAY ---------- */
+#define Relay_Keep 8   // KEEP
+
+/* ---------- SLECTOR SWITCH ---------- */
+/*
+
+*        ---       ---       ---
+*       /   \     /   \     /   \
+*      |  A  |   |  B  |   |  C  |
+*       \   /     \   /     \   /
+*        ---       ---       ---
+
+*/
+
+#define SLECTOR_SWITCH_A1 33
+#define SLECTOR_SWITCH_A2 31
+#define SLECTOR_SWITCH_A3 29
+
+#define SLECTOR_SWITCH_B1 39
+#define SLECTOR_SWITCH_B2 37
+#define SLECTOR_SWITCH_B3 35
+
+#define SLECTOR_SWITCH_C1 45
+#define SLECTOR_SWITCH_C2 43
+#define SLECTOR_SWITCH_C3 41
+
+#define SEND_DATA_FORM_SLECTOR_SWITCH 12
+
+int pinIN[18] = {
+                JoyA_YAxis, JoyB_YAxis,
+                JoyC_XAxis, JoyD_XAxis,
+                Joy_Keep,
+                SLECTOR_SWITCH_A1, SLECTOR_SWITCH_A2, SLECTOR_SWITCH_A3,
+                SLECTOR_SWITCH_B1, SLECTOR_SWITCH_B2, SLECTOR_SWITCH_B3,
+                SLECTOR_SWITCH_C1, SLECTOR_SWITCH_C2, SLECTOR_SWITCH_C3,
+                SEND_DATA_FORM_SLECTOR_SWITCH,
+                Limit_XAxis, Limit_YAxis, Limit_ZAxis,
                 };
 /*
 *   JoyStick : Common => GND
@@ -56,38 +83,7 @@ int pinIN[6] = {
 *       |
 *       B
 
-A
-    13
-    14 => GND
-
-B
-    33
-    34 => GND
-
-C
-    23 => GND
-    24
-
-D
-    43 => GND
-    44
-
-
 */
 
-
-// byte pinOUT[12] = {
-//                     ENA_X1,DIR_X1,PUL_X1,
-//                     ENA_X2,DIR_X2,PUL_X2,
-//                     ENA_Y,DIR_Y,PUL_Y,
-//                     ENA_Z,DIR_Z,PUL_Z,
-//                     };
-
-// int pinOUT[8] = {
-//                 DIR_X1,PUL_X1,
-//                 DIR_X2,PUL_X2,
-//                 DIR_Y,PUL_Y,
-//                 DIR_Z,PUL_Z,
-//                 };
 
 #endif
