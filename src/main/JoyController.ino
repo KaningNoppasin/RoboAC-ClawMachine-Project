@@ -8,14 +8,10 @@
 
 
 void JoyController(){
-    // setSpeedAndLimitPositionOutOfRange
     // Y
     if (!digitalRead(JoyA_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
 	else if (!digitalRead(JoyB_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
 	else stepperY.setSpeedAndLimitPositionOutOfRange(0);
-    // if (!digitalRead(JoyA_YAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
-	// else if (!digitalRead(JoyB_YAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
-	// else stepperZ.setSpeedAndLimitPositionOutOfRange(0);
 
     // X
 	if (!digitalRead(JoyC_XAxis))

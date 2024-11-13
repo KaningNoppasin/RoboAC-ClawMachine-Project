@@ -51,9 +51,6 @@ void readSelectorSwitch(){
     else if (!digitalRead(SLECTOR_SWITCH_C2)) selectorSwitchC_Value = 2;
     else if (!digitalRead(SLECTOR_SWITCH_C3)) selectorSwitchC_Value = 3;
     else selectorSwitchC_Value = 0;
-    // Serial.print(selectorSwitchA_Value);
-    // Serial.print(selectorSwitchB_Value);
-    // Serial.println(selectorSwitchC_Value);
 }
 
 void setup()
@@ -64,9 +61,6 @@ void setup()
 
 	for (int i = 0; i < sizeof(pinIN) / sizeof(int); i++) pinMode(pinIN[i], INPUT_PULLUP);
     pinMode(Relay_Keep, OUTPUT);
-    // x 2900
-    // x 810 mm
-    // y 720 mm
     initStepper();
 
     setHome();
