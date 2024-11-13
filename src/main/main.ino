@@ -77,9 +77,10 @@ void loop()
 /*
 * Max Position
 X1 2700 | X2 -2700
-Y -2475
+Y 2475
 Z ok -1000 max(use)-2000
 */
+// 690_690_
     // readSelectorSwitch();
     // getCurrentPosition();
     // getInputValue();
@@ -90,10 +91,12 @@ Z ok -1000 max(use)-2000
             setHome();
         }
         else{
+            Serial.println("plotXY_2 >>");
             while (true){
                 if (Serial.available() > 0){
                     // plotXYZ();
-                    plotXYZ_2();
+                    plotXY_2();
+                    Serial.println("done !");
                     break;
                 }
             }

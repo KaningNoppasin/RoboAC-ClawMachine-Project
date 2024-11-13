@@ -6,44 +6,27 @@
 #include "./StepperController.ino"
 
 
-void gripperKeep(){
-    // DOWN
-    stepperZ.moveTo(-1000);
-    while(stepperZ.run())delay(1);
-    // Serial.println("goToTargetPosition -1000");
-    // stepperZ.goToTargetPosition(-1000);
-
-    // KEEP
-    digitalWrite(Relay_Keep, HIGH);
-    delay(1000);
-
-    // UP to Show
-    stepperZ.moveTo(-1900);
-    while(stepperZ.run())delay(1);
-    // Serial.println("goToTargetPosition -1900");
-    // stepperZ.goToTargetPosition(-1900);
-    delay(1000);
-
-    // Release
-    digitalWrite(Relay_Keep, LOW);
-}
 
 void JoyController(){
+    // setSpeedAndLimitPositionOutOfRange
     // Y
-    if (!digitalRead(JoyA_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
-	else if (!digitalRead(JoyB_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+    if (!digitalRead(JoyA_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+	else if (!digitalRead(JoyB_YAxis)) stepperY.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
 	else stepperY.setSpeedAndLimitPositionOutOfRange(0);
+    // if (!digitalRead(JoyA_YAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+	// else if (!digitalRead(JoyB_YAxis)) stepperZ.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
+	// else stepperZ.setSpeedAndLimitPositionOutOfRange(0);
 
     // X
 	if (!digitalRead(JoyC_XAxis))
 	{
         stepperX1.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
-        stepperX2.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
+        stepperX2.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
 	}
 	else if (!digitalRead(JoyD_XAxis))
 	{
         stepperX1.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
-        stepperX2.setSpeedAndLimitPositionOutOfRange(-defaultSpeed);
+        stepperX2.setSpeedAndLimitPositionOutOfRange(defaultSpeed);
 	}
     else
 	{
